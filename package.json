@@ -1,0 +1,14 @@
+{
+  "name": "cmsv6-edu",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Educational CMSV6-like telematics platform with Wialon IPS, JT808, live dashboard, and MDVR-ready architecture.",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

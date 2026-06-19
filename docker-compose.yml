@@ -1,0 +1,13 @@
+services:
+  cmsv6-edu:
+    build: .
+    ports:
+      - "8080:8080"
+      - "20332:20332"
+      - "20380:20380"
+    volumes:
+      - ./data:/app/data
+    environment:
+      HTTP_PORT: "8080"
+      WIALON_PORT: "20332"
+      JT808_PORT: "20380"

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CMSV6 Edu Fleet Console</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>CMSV6 Edu</h1>
+        <p>Telematics gateway, live tracking, alarms, and MDVR-ready architecture</p>
+      </div>
+      <button id="simulateBtn" title="Create a sample Tehran route point">Simulate</button>
+    </header>
+
+    <main class="layout">
+      <section class="map-panel">
+        <div id="map"></div>
+      </section>
+
+      <aside class="side-panel">
+        <section>
+          <div class="section-title">
+            <h2>Fleet</h2>
+            <span id="deviceCount">0</span>
+          </div>
+          <div id="devices" class="list"></div>
+        </section>
+
+        <section>
+          <div class="section-title">
+            <h2>Alarms</h2>
+            <span id="alarmCount">0</span>
+          </div>
+          <div id="alarms" class="list compact"></div>
+        </section>
+
+        <section>
+          <div class="section-title">
+            <h2>Video Gateway</h2>
+          </div>
+          <div class="video-placeholder">
+            <strong>MDVR pipeline stub</strong>
+            <span>JT1078 / GB28181 ingest can be attached to SRS, ZLMediaKit, or lkm.</span>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
