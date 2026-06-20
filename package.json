@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/server.mjs",
     "lab": "HTTP_PORT=18080 WIALON_PORT=21332 JT808_PORT=21380 DIAGNOSTIC_PORT=21000 node src/server.mjs",
+    "simulate:dashcam": "node tools/dashcam-simulator.mjs",
     "test": "node --test"
   },
   "engines": {

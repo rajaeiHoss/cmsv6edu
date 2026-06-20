@@ -67,6 +67,22 @@ docker compose up --build
 printf '#L#123456789012345;\\r\\n#D#190626;101530;3540.0000;N;05125.0000;E;72;180;120;8;1.0;;;;;ignition:1\\r\\n' | nc localhost 20332
 ```
 
+## Dashcam Simulator
+
+Use the local simulator before testing a SIM-card dashcam through a public IP.
+
+```bash
+npm run simulate:dashcam -- --mode diagnostic --host 127.0.0.1 --port 21000
+npm run simulate:dashcam -- --mode wialon --host 127.0.0.1 --port 21332 --count 5
+npm run simulate:dashcam -- --mode jt808 --host 127.0.0.1 --port 21380 --count 5
+```
+
+For a public server, replace `--host` with the public IP or DNS name and use the exposed ports:
+
+```bash
+npm run simulate:dashcam -- --mode jt808 --host YOUR_PUBLIC_IP --port 20380 --deviceId 123456789012
+```
+
 ## API
 
 ```text

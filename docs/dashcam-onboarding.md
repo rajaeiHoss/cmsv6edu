@@ -28,6 +28,36 @@ If using lab mode locally:
 http://localhost:18080/api/connections
 ```
 
+## Simulator Test Before SIM Card
+
+Run the app in lab mode:
+
+```bash
+npm run lab
+```
+
+Then run simulated devices:
+
+```bash
+npm run simulate:dashcam -- --mode diagnostic --host 127.0.0.1 --port 21000
+npm run simulate:dashcam -- --mode wialon --host 127.0.0.1 --port 21332 --count 5
+npm run simulate:dashcam -- --mode jt808 --host 127.0.0.1 --port 21380 --count 5
+```
+
+The JT808 simulator performs:
+
+1. Terminal registration `0x0100`.
+2. Platform registration reply `0x8100`.
+3. Terminal authentication `0x0102`.
+4. Heartbeat `0x0002`.
+5. Location upload `0x0200`.
+
+Use the same simulator against a public server before putting a SIM card in the dashcam:
+
+```bash
+npm run simulate:dashcam -- --mode jt808 --host YOUR_PUBLIC_IP --port 20380 --count 10
+```
+
 ## How To Interpret Captures
 
 | Capture | Meaning | Next Step |
