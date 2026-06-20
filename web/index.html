@@ -13,7 +13,10 @@
         <h1>CMSV6 Edu</h1>
         <p>Telematics gateway, live tracking, alarms, and MDVR-ready architecture</p>
       </div>
-      <button id="simulateBtn" title="Create a sample Tehran route point">Simulate</button>
+      <div class="topbar-actions">
+        <button id="labModeBtn" class="secondary" title="Show dashcam connection diagnostics">Device Lab</button>
+        <button id="simulateBtn" title="Create a sample Tehran route point">Simulate</button>
+      </div>
     </header>
 
     <main class="layout">
@@ -28,6 +31,32 @@
             <span id="deviceCount">0</span>
           </div>
           <div id="devices" class="list"></div>
+        </section>
+
+        <section id="deviceLabPanel" class="device-lab-panel">
+          <div class="section-title">
+            <h2>Device Lab</h2>
+            <button id="resetConnectionsBtn" class="ghost" title="Clear captured connection events">Clear</button>
+          </div>
+          <div class="lab-settings">
+            <div>
+              <strong>First test port</strong>
+              <code>21000</code>
+            </div>
+            <div>
+              <strong>Wialon IPS</strong>
+              <code>21332</code>
+            </div>
+            <div>
+              <strong>JT808</strong>
+              <code>21380</code>
+            </div>
+          </div>
+          <div class="section-subtitle">
+            <span id="connectionCount">0</span>
+            <span>connection events</span>
+          </div>
+          <div id="connections" class="list compact"></div>
         </section>
 
         <section>

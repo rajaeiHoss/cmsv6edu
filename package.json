@@ -6,6 +6,7 @@
   "description": "Educational CMSV6-like telematics platform with Wialon IPS, JT808, live dashboard, and MDVR-ready architecture.",
   "scripts": {
     "start": "node src/server.mjs",
+    "lab": "HTTP_PORT=18080 WIALON_PORT=21332 JT808_PORT=21380 DIAGNOSTIC_PORT=21000 node src/server.mjs",
     "test": "node --test"
   },
   "engines": {

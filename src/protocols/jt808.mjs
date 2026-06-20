@@ -4,6 +4,7 @@ export const JT808 = {
   AUTH: 0x0102,
   LOCATION: 0x0200,
   GENERAL_REPLY: 0x8001,
+  REGISTER_REPLY: 0x8100,
 };
 
 function checksum(buffer) {
@@ -47,10 +48,11 @@ function bcdString(buffer) {
   return text.replace(/^0+(?=\d)/, "");
 }
 
-function phoneToBcd(phone) {
-  const digits = String(phone).padStart(12, "0").slice(-12);
-  const out = Buffer.alloc(6);
-  for (let i = 0; i < 6; i += 1) {
+function phoneToBcd(phone, bytes = 6) {
+  const width = bytes * 2;
+  const digits = String(phone).padStart(width, "0").slice(-width);
+  const out = Buffer.alloc(bytes);
+  for (let i = 0; i < bytes; i += 1) {
     out[i] = (Number(digits[i * 2]) << 4) | Number(digits[i * 2 + 1]);
   }
   return out;
@@ -112,32 +114,78 @@ export function decodeJT808Frame(frame) {
   const messageId = payload.readUInt16BE(0);
   const props = payload.readUInt16BE(2);
   const bodyLength = props & 0x03ff;
-  const deviceId = bcdString(payload.subarray(4, 10));
-  const serial = payload.readUInt16BE(10);
-  const bodyStart = props & (1 << 13) ? 16 : 12;
+  const versioned = Boolean(props & (1 << 14));
+  const terminalBytes = versioned ? 10 : 6;
+  const terminalStart = versioned ? 5 : 4;
+  const terminalEnd = terminalStart + terminalBytes;
+  if (payload.length < terminalEnd + 3) throw new Error("JT808 header is incomplete");
+  const protocolVersion = versioned ? payload[4] : undefined;
+  const deviceId = bcdString(payload.subarray(terminalStart, terminalEnd));
+  const serial = payload.readUInt16BE(terminalEnd);
+  const baseBodyStart = terminalEnd + 2;
+  const bodyStart = props & (1 << 13) ? baseBodyStart + 4 : baseBodyStart;
   const bodyEnd = bodyStart + bodyLength;
   if (bodyEnd > payload.length - 1) throw new Error(`JT808 body length out of range: ${bodyLength}`);
   const body = payload.subarray(bodyStart, bodyEnd);
-  const packet = { messageId, deviceId, serial, body };
+  const packet = {
+    messageId,
+    deviceId,
+    serial,
+    body,
+    protocolVersion,
+    versioned,
+    terminalBytes,
+  };
   if (messageId === JT808.LOCATION) packet.position = parseLocation(deviceId, body);
   return packet;
 }
 
-export function encodeJT808Frame(messageId, phone, serial, body = Buffer.alloc(0)) {
-  const payload = Buffer.alloc(12 + body.length + 1);
+export function encodeJT808Frame(messageId, phone, serial, body = Buffer.alloc(0), options = {}) {
+  const versioned = Boolean(options.versioned);
+  const terminalBytes = options.terminalBytes || (versioned ? 10 : 6);
+  const headerLength = versioned ? 5 + terminalBytes + 2 : 4 + terminalBytes + 2;
+  const payload = Buffer.alloc(headerLength + body.length + 1);
   payload.writeUInt16BE(messageId, 0);
-  payload.writeUInt16BE(body.length, 2);
-  phoneToBcd(phone).copy(payload, 4);
-  payload.writeUInt16BE(serial, 10);
-  body.copy(payload, 12);
+  payload.writeUInt16BE(body.length | (versioned ? (1 << 14) : 0), 2);
+  let offset = 4;
+  if (versioned) {
+    payload[offset] = options.protocolVersion || 1;
+    offset += 1;
+  }
+  phoneToBcd(phone, terminalBytes).copy(payload, offset);
+  offset += terminalBytes;
+  payload.writeUInt16BE(serial, offset);
+  offset += 2;
+  body.copy(payload, offset);
   payload[payload.length - 1] = checksum(payload.subarray(0, payload.length - 1));
   return Buffer.concat([Buffer.from([0x7e]), escapePayload(payload), Buffer.from([0x7e])]);
 }
 
-export function encodeGeneralReply(phone, serial, replyTo, result = 0) {
+function responseOptions(packet) {
+  return {
+    versioned: packet.versioned,
+    terminalBytes: packet.terminalBytes,
+    protocolVersion: packet.protocolVersion,
+  };
+}
+
+export function encodeGeneralReply(phone, serial, replyTo, result = 0, options = {}) {
   const body = Buffer.alloc(5);
   body.writeUInt16BE(serial, 0);
   body.writeUInt16BE(replyTo, 2);
   body[4] = result;
-  return encodeJT808Frame(JT808.GENERAL_REPLY, phone, serial, body);
+  return encodeJT808Frame(JT808.GENERAL_REPLY, phone, serial, body, options);
+}
+
+export function encodeGeneralReplyForPacket(packet, result = 0) {
+  return encodeGeneralReply(packet.deviceId, packet.serial, packet.messageId, result, responseOptions(packet));
+}
+
+export function encodeRegisterReply(packet, authCode = "cmsv6edu", result = 0) {
+  const auth = Buffer.from(result === 0 ? authCode : "", "utf8");
+  const body = Buffer.alloc(3 + auth.length);
+  body.writeUInt16BE(packet.serial, 0);
+  body[2] = result;
+  auth.copy(body, 3);
+  return encodeJT808Frame(JT808.REGISTER_REPLY, packet.deviceId, packet.serial, body, responseOptions(packet));
 }

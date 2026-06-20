@@ -1,9 +1,11 @@
 const state = {
   devices: new Map(),
   alarms: [],
+  connections: [],
   markers: new Map(),
   route: null,
   sampleIndex: 0,
+  showLab: true,
 };
 
 const tehranRoute = [
@@ -25,6 +27,7 @@ async function loadSnapshot() {
   const snapshot = await res.json();
   snapshot.devices.forEach((device) => state.devices.set(device.id, device));
   state.alarms = snapshot.alarms || [];
+  state.connections = snapshot.connections || [];
   render();
 }
 
@@ -49,6 +52,13 @@ function connectEvents() {
       state.alarms.unshift(message.data);
       state.alarms = state.alarms.slice(0, 50);
     }
+    if (message.type === "connection") {
+      state.connections.unshift(message.data);
+      state.connections = state.connections.slice(0, 100);
+    }
+    if (message.type === "connections_reset") {
+      state.connections = [];
+    }
     render();
   };
 }
@@ -56,6 +66,7 @@ function connectEvents() {
 function render() {
   renderDevices();
   renderAlarms();
+  renderConnections();
   renderMarkers();
 }
 
@@ -66,6 +77,37 @@ function renderDevices() {
   el.innerHTML = devices.length
     ? devices.map(deviceTemplate).join("")
     : `<div class="meta">No devices connected yet. Use Simulate or connect Wialon IPS/JT808 clients.</div>`;
+}
+
+function renderConnections() {
+  const panel = document.getElementById("deviceLabPanel");
+  panel.hidden = !state.showLab;
+  document.getElementById("connectionCount").textContent = state.connections.length;
+  const el = document.getElementById("connections");
+  const visible = state.connections.slice(0, 16);
+  el.innerHTML = visible.length
+    ? visible.map(connectionTemplate).join("")
+    : `<div class="meta">No dashcam connections yet. Point the device to port 21000 first.</div>`;
+}
+
+function connectionTemplate(connection) {
+  const time = connection.at ? new Date(connection.at).toLocaleTimeString() : "";
+  const detected = connection.detectedProtocol || connection.messageId || connection.error || "";
+  const cls = connection.phase === "reject" || connection.error ? " bad" : "";
+  const raw = connection.hex
+    ? `<details><summary>Raw packet</summary><code class="packet">${escapeHtml(connection.hex)}</code><div class="meta">${escapeHtml(connection.ascii || "")}</div></details>`
+    : "";
+  return `
+    <div class="item connection${cls}">
+      <strong>${escapeHtml(connection.protocol)} · ${escapeHtml(connection.phase)}</strong>
+      <div class="meta">
+        ${time} · ${escapeHtml(connection.remoteAddress || "")}:${escapeHtml(connection.remotePort || "")}<br />
+        ${detected ? `Detected: ${escapeHtml(detected)}<br />` : ""}
+        ${connection.deviceId ? `Device: ${escapeHtml(connection.deviceId)}<br />` : ""}
+        ${connection.length ? `Bytes: ${connection.length}` : ""}
+      </div>
+      ${raw}
+    </div>`;
 }
 
 function deviceTemplate(device) {
@@ -146,6 +188,12 @@ async function simulatePosition() {
   });
 }
 
+async function resetConnections() {
+  await fetch("/api/connections/reset", { method: "POST" });
+  state.connections = [];
+  renderConnections();
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -156,4 +204,11 @@ function escapeHtml(value) {
 }
 
 document.getElementById("simulateBtn").addEventListener("click", simulatePosition);
+document.getElementById("resetConnectionsBtn").addEventListener("click", resetConnections);
+document.getElementById("labModeBtn").addEventListener("click", () => {
+  state.showLab = !state.showLab;
+  document.getElementById("labModeBtn").classList.toggle("active", state.showLab);
+  renderConnections();
+});
+document.getElementById("labModeBtn").classList.toggle("active", state.showLab);
 loadSnapshot().then(connectEvents);
